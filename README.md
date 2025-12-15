@@ -276,8 +276,8 @@ This simulator demonstrates:
 ### Installation
 
 ### 1. Clone the repository
-git clone https://github.com/itsbrianhughes/PROJECT-5-P2P-SIMULATOR.git
-cd PROJECT-5-P2P-SIMULATOR
+git clone https://github.com/itsbrianhughes/p2p-lifecycle-simulator.git
+cd p2p-lifecycle-simulator
 
 ### 2. Create virtual environment
 python3 -m venv venv
