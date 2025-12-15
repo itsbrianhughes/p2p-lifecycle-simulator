@@ -305,7 +305,7 @@ The application will:
 ## Project Structure
 
 ```
-PROJECT-5-P2P-SIMULATOR/
+p2p-lifecycle-simulator/
 ├── backend/
 │   ├── main.py                    # FastAPI app + routes
 │   ├── database.py                # SQLite connection & initialization
