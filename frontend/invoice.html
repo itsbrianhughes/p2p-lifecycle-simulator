@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Invoices - P2P Lifecycle Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">P2P Lifecycle Simulator</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:underline">Home</a>
+                <a href="/static/po.html" class="hover:underline">Purchase Orders</a>
+                <a href="/static/asn.html" class="hover:underline">ASN</a>
+                <a href="/static/receipt.html" class="hover:underline">Goods Receipt</a>
+                <a href="/static/invoice.html" class="font-bold underline">Invoices</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Left Column: Create Invoice Form -->
+            <div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-800">Create Vendor Invoice</h2>
+
+                    <form id="invoiceForm">
+                        <!-- Invoice Header Section -->
+                        <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-semibold mb-3 text-gray-700">Invoice Header</h3>
+
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Purchase Order *
+                                </label>
+                                <select
+                                    id="poSelect"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">Select a PO...</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Vendor Invoice Number *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="invoiceId"
+                                    required
+                                    placeholder="INV-VENDOR-12345"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Vendor Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="vendorName"
+                                    required
+                                    placeholder="Vendor name"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Invoice Date *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="invoiceDate"
+                                        required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Due Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="dueDate"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Payment Terms
+                                </label>
+                                <input
+                                    type="text"
+                                    id="paymentTerms"
+                                    placeholder="Net 30"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Notes
+                                </label>
+                                <textarea
+                                    id="notes"
+                                    rows="2"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                ></textarea>
+                            </div>
+
+                            <button
+                                type="button"
+                                id="loadFromPOBtn"
+                                class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition"
+                            >
+                                Load Lines from PO
+                            </button>
+                        </div>
+
+                        <!-- Line Items Section -->
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-gray-700">Invoice Line Items</h3>
+                                <button
+                                    type="button"
+                                    id="addLineBtn"
+                                    class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 transition text-sm"
+                                >
+                                    + Add Line
+                                </button>
+                            </div>
+
+                            <div id="linesContainer" class="space-y-2 max-h-96 overflow-y-auto">
+                                <!-- Line items will be added here -->
+                            </div>
+                        </div>
+
+                        <!-- Total Amount Display -->
+                        <div class="mb-6 p-4 bg-gray-100 rounded-lg">
+                            <div class="flex justify-between items-center text-lg font-bold">
+                                <span>Total Amount:</span>
+                                <span id="totalAmount">$0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button
+                            type="submit"
+                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition font-semibold"
+                        >
+                            Create Invoice
+                        </button>
+                    </form>
+
+                    <!-- Success/Error Messages -->
+                    <div id="message" class="mt-4"></div>
+                </div>
+            </div>
+
+            <!-- Right Column: Invoice List -->
+            <div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Invoice List</h2>
+                        <button
+                            id="refreshBtn"
+                            class="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition"
+                        >
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Invoice ID</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">PO ID</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Vendor</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Status</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Date</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Total</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Lines</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoiceTableBody">
+                                <tr>
+                                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                        Loading invoices...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include API client and utilities -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/utils.js"></script>
+
+    <script>
+        // ====================================================================
+        // STATE MANAGEMENT
+        // ====================================================================
+
+        let lineCounter = 0;
+        let currentPO = null;
+
+        // ====================================================================
+        // INITIALIZATION
+        // ====================================================================
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set default invoice date to today
+            document.getElementById('invoiceDate').valueAsDate = new Date();
+
+            // Load POs for dropdown
+            await loadPOsForDropdown();
+
+            // Load invoice list
+            await loadInvoiceList();
+
+            // Add initial line
+            addLine();
+
+            // Event listeners
+            document.getElementById('invoiceForm').addEventListener('submit', handleSubmit);
+            document.getElementById('addLineBtn').addEventListener('click', addLine);
+            document.getElementById('loadFromPOBtn').addEventListener('click', loadFromPO);
+            document.getElementById('refreshBtn').addEventListener('click', loadInvoiceList);
+            document.getElementById('poSelect').addEventListener('change', handlePOChange);
+        });
+
+        // ====================================================================
+        // PO DROPDOWN
+        // ====================================================================
+
+        async function loadPOsForDropdown() {
+            try {
+                const pos = await listPOs();
+                const poSelect = document.getElementById('poSelect');
+
+                poSelect.innerHTML = '<option value="">Select a PO...</option>';
+
+                pos.forEach(po => {
+                    const option = document.createElement('option');
+                    option.value = po.po_id;
+                    option.textContent = `${po.po_id} - ${po.vendor_name} ($${po.total_amount.toFixed(2)})`;
+                    option.dataset.vendorName = po.vendor_name;
+                    poSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load POs:', error);
+            }
+        }
+
+        async function handlePOChange(e) {
+            const selectedOption = e.target.selectedOptions[0];
+            if (selectedOption && selectedOption.dataset.vendorName) {
+                document.getElementById('vendorName').value = selectedOption.dataset.vendorName;
+            }
+        }
+
+        async function loadFromPO() {
+            const poId = document.getElementById('poSelect').value;
+
+            if (!poId) {
+                showMessage('Please select a PO first', 'error');
+                return;
+            }
+
+            try {
+                const po = await getPO(poId);
+                currentPO = po;
+
+                // Clear existing lines
+                document.getElementById('linesContainer').innerHTML = '';
+                lineCounter = 0;
+
+                // Add line for each PO line
+                po.lines.forEach((poLine, index) => {
+                    addLine({
+                        product_sku: poLine.product_sku,
+                        product_description: poLine.product_description,
+                        quantity_invoiced: poLine.quantity_ordered,
+                        unit_price: poLine.unit_price
+                    });
+                });
+
+                showMessage('Lines loaded from PO successfully', 'success');
+            } catch (error) {
+                showMessage(`Failed to load PO: ${error.message}`, 'error');
+            }
+        }
+
+        // ====================================================================
+        // LINE ITEM MANAGEMENT
+        // ====================================================================
+
+        function addLine(data = {}) {
+            lineCounter++;
+            const container = document.getElementById('linesContainer');
+
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'p-3 bg-gray-50 rounded-lg border border-gray-200';
+            lineDiv.dataset.lineId = lineCounter;
+
+            lineDiv.innerHTML = `
+                <div class="grid grid-cols-12 gap-2 items-start">
+                    <div class="col-span-1">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Line</label>
+                        <input
+                            type="number"
+                            value="${lineCounter}"
+                            readonly
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md bg-gray-100"
+                        />
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">SKU *</label>
+                        <input
+                            type="text"
+                            name="product_sku"
+                            value="${data.product_sku || ''}"
+                            required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div class="col-span-3">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Description *</label>
+                        <input
+                            type="text"
+                            name="product_description"
+                            value="${data.product_description || ''}"
+                            required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Qty *</label>
+                        <input
+                            type="number"
+                            name="quantity_invoiced"
+                            value="${data.quantity_invoiced || ''}"
+                            step="0.01"
+                            required
+                            onchange="calculateTotal()"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Price *</label>
+                        <input
+                            type="number"
+                            name="unit_price"
+                            value="${data.unit_price || ''}"
+                            step="0.01"
+                            required
+                            onchange="calculateTotal()"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">&nbsp;</label>
+                        <button
+                            type="button"
+                            onclick="removeLine(${lineCounter})"
+                            class="w-full bg-red-500 text-white py-1 px-2 rounded-md hover:bg-red-600 transition text-sm"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(lineDiv);
+            calculateTotal();
+        }
+
+        function removeLine(lineId) {
+            const lineDiv = document.querySelector(`[data-line-id="${lineId}"]`);
+            if (lineDiv) {
+                lineDiv.remove();
+                calculateTotal();
+            }
+        }
+
+        function calculateTotal() {
+            const container = document.getElementById('linesContainer');
+            const lines = container.querySelectorAll('[data-line-id]');
+
+            let total = 0;
+            lines.forEach(line => {
+                const qty = parseFloat(line.querySelector('[name="quantity_invoiced"]').value) || 0;
+                const price = parseFloat(line.querySelector('[name="unit_price"]').value) || 0;
+                total += qty * price;
+            });
+
+            document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+        }
+
+        // ====================================================================
+        // FORM SUBMISSION
+        // ====================================================================
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            const poId = document.getElementById('poSelect').value;
+            const invoiceId = document.getElementById('invoiceId').value;
+            const vendorName = document.getElementById('vendorName').value;
+            const invoiceDate = document.getElementById('invoiceDate').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const paymentTerms = document.getElementById('paymentTerms').value;
+            const notes = document.getElementById('notes').value;
+
+            // Collect line items
+            const lines = [];
+            const container = document.getElementById('linesContainer');
+            const lineDivs = container.querySelectorAll('[data-line-id]');
+
+            lineDivs.forEach((lineDiv, index) => {
+                const lineNumber = index + 1;
+                const sku = lineDiv.querySelector('[name="product_sku"]').value;
+                const description = lineDiv.querySelector('[name="product_description"]').value;
+                const qty = parseFloat(lineDiv.querySelector('[name="quantity_invoiced"]').value);
+                const price = parseFloat(lineDiv.querySelector('[name="unit_price"]').value);
+
+                lines.push({
+                    line_number: lineNumber,
+                    product_sku: sku,
+                    product_description: description,
+                    quantity_invoiced: qty,
+                    unit_price: price
+                });
+            });
+
+            if (lines.length === 0) {
+                showMessage('Please add at least one line item', 'error');
+                return;
+            }
+
+            const invoiceData = {
+                invoice_id: invoiceId,
+                po_id: poId,
+                vendor_name: vendorName,
+                invoice_date: invoiceDate,
+                due_date: dueDate || null,
+                payment_terms: paymentTerms || null,
+                notes: notes || null,
+                lines: lines
+            };
+
+            try {
+                const result = await createInvoice(invoiceData);
+                showMessage(`Invoice created successfully: ${result.invoice_id}`, 'success');
+
+                // Reset form
+                document.getElementById('invoiceForm').reset();
+                document.getElementById('invoiceDate').valueAsDate = new Date();
+                document.getElementById('linesContainer').innerHTML = '';
+                lineCounter = 0;
+                addLine();
+
+                // Refresh invoice list
+                await loadInvoiceList();
+            } catch (error) {
+                showMessage(`Failed to create invoice: ${error.message}`, 'error');
+            }
+        }
+
+        // ====================================================================
+        // INVOICE LIST
+        // ====================================================================
+
+        async function loadInvoiceList() {
+            try {
+                const invoices = await listInvoices();
+                const tbody = document.getElementById('invoiceTableBody');
+
+                if (invoices.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                No invoices created yet
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = invoices.map(invoice => {
+                    const statusBadge = getStatusBadge(invoice.status);
+                    return `
+                        <tr class="hover:bg-gray-50 border-b">
+                            <td class="px-4 py-2 text-sm font-medium text-blue-600">
+                                <a href="#" onclick="viewInvoice('${invoice.invoice_id}'); return false;">
+                                    ${invoice.invoice_id}
+                                </a>
+                            </td>
+                            <td class="px-4 py-2 text-sm">${invoice.po_id}</td>
+                            <td class="px-4 py-2 text-sm">${invoice.vendor_name}</td>
+                            <td class="px-4 py-2 text-sm">${statusBadge}</td>
+                            <td class="px-4 py-2 text-sm">${invoice.invoice_date}</td>
+                            <td class="px-4 py-2 text-sm font-semibold">$${invoice.total_amount.toFixed(2)}</td>
+                            <td class="px-4 py-2 text-sm text-center">${invoice.line_count}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load invoices:', error);
+                const tbody = document.getElementById('invoiceTableBody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-red-500">
+                            Failed to load invoices
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'pending': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>',
+                'matched': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Matched</span>',
+                'blocked': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Blocked</span>',
+                'approved': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Approved</span>',
+                'paid': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Paid</span>'
+            };
+            return badges[status] || `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">${status}</span>`;
+        }
+
+        async function viewInvoice(invoiceId) {
+            try {
+                const invoice = await getInvoice(invoiceId);
+                alert(JSON.stringify(invoice, null, 2));
+            } catch (error) {
+                showMessage(`Failed to load invoice: ${error.message}`, 'error');
+            }
+        }
+
+        // ====================================================================
+        // UTILITY FUNCTIONS
+        // ====================================================================
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            const bgColor = type === 'success' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300';
+
+            messageDiv.innerHTML = `
+                <div class="${bgColor} border px-4 py-3 rounded-lg">
+                    ${message}
+                </div>
+            `;
+
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

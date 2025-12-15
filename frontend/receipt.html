@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goods Receipts - P2P Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm mb-6">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-bold text-gray-800">P2P Lifecycle Simulator</h1>
+                <div class="space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-gray-800">Home</a>
+                    <a href="/static/po.html" class="text-gray-600 hover:text-gray-800">Purchase Orders</a>
+                    <a href="/static/asn.html" class="text-gray-600 hover:text-gray-800">ASN</a>
+                    <a href="/static/receipt.html" class="text-blue-600 font-semibold">Receipts</a>
+                    <a href="/docs" class="text-gray-600 hover:text-gray-800">API Docs</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-6">
+        <div class="max-w-6xl mx-auto">
+            <!-- Page Header -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Goods Receipts</h2>
+                <p class="text-gray-600">Post warehouse receipts for incoming shipments</p>
+            </div>
+
+            <!-- Create Receipt Form -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Create New Goods Receipt</h3>
+
+                <form id="createReceiptForm" class="space-y-4">
+                    <!-- Source Selection (PO or ASN) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Select Purchase Order *
+                            </label>
+                            <select id="poSelect" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Select a Purchase Order --</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Select ASN (Optional)
+                            </label>
+                            <select id="asnSelect" disabled
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100">
+                                <option value="">-- Select PO first --</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Leave blank to receive directly from PO</p>
+                        </div>
+                    </div>
+
+                    <!-- Receipt Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Received Date *
+                            </label>
+                            <input type="date" id="receivedDate" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Warehouse Location
+                            </label>
+                            <input type="text" id="warehouseLocation"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="DOCK-A">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Received By
+                            </label>
+                            <input type="text" id="receivedBy"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="Receiver name">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Notes
+                        </label>
+                        <input type="text" id="notes"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Receipt notes">
+                    </div>
+
+                    <!-- Line Items Section -->
+                    <div class="border-t pt-4 mt-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-semibold text-gray-800">Received Line Items</h4>
+                            <button type="button" id="loadLinesBtn" disabled
+                                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                Load from Source
+                            </button>
+                        </div>
+
+                        <div id="lineItemsContainer">
+                            <p class="text-gray-500 text-sm">Select a Purchase Order to load line items</p>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" onclick="resetForm()"
+                                class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Reset
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Post Goods Receipt
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Receipt List -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">All Goods Receipts</h3>
+                    <button onclick="loadReceipts()"
+                            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
+                        Refresh
+                    </button>
+                </div>
+
+                <div id="receiptListContainer">
+                    <!-- Receipt list will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+        let selectedPO = null;
+        let selectedASN = null;
+        let sourceData = null; // Will hold either PO or ASN data
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPurchaseOrders();
+            loadReceipts();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // PO selection change
+            document.getElementById('poSelect').addEventListener('change', handlePOSelection);
+
+            // ASN selection change
+            document.getElementById('asnSelect').addEventListener('change', handleASNSelection);
+
+            // Load lines button
+            document.getElementById('loadLinesBtn').addEventListener('click', loadLines);
+
+            // Set default received date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('receivedDate').value = today;
+        }
+
+        // Load POs into dropdown
+        async function loadPurchaseOrders() {
+            try {
+                const pos = await listPOs();
+                const poSelect = document.getElementById('poSelect');
+
+                // Clear existing options except first
+                poSelect.innerHTML = '<option value="">-- Select a Purchase Order --</option>';
+
+                // Add all POs to dropdown
+                pos.forEach(po => {
+                    const option = document.createElement('option');
+                    option.value = po.po_id;
+                    option.textContent = `${po.po_id} - ${po.vendor_name} - ${po.status}`;
+                    poSelect.appendChild(option);
+                });
+
+                if (pos.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No Purchase Orders available';
+                    option.disabled = true;
+                    poSelect.appendChild(option);
+                }
+            } catch (error) {
+                showAlert(`Failed to load Purchase Orders: ${error.message}`, 'error');
+            }
+        }
+
+        // Handle PO selection
+        async function handlePOSelection(event) {
+            const poId = event.target.value;
+
+            if (!poId) {
+                selectedPO = null;
+                sourceData = null;
+                document.getElementById('asnSelect').disabled = true;
+                document.getElementById('asnSelect').innerHTML = '<option value="">-- Select PO first --</option>';
+                document.getElementById('loadLinesBtn').disabled = true;
+                document.getElementById('lineItemsContainer').innerHTML = '<p class="text-gray-500 text-sm">Select a Purchase Order to load line items</p>';
+                return;
+            }
+
+            try {
+                // Fetch full PO details
+                selectedPO = await getPO(poId);
+                sourceData = selectedPO;
+
+                // Load ASNs for this PO
+                const asns = await getASNsForPO(poId);
+                const asnSelect = document.getElementById('asnSelect');
+                asnSelect.innerHTML = '<option value="">-- Receive from PO directly --</option>';
+
+                asns.forEach(asn => {
+                    const option = document.createElement('option');
+                    option.value = asn.asn_id;
+                    option.textContent = `${asn.asn_id} - ${asn.tracking_number || 'No tracking'}`;
+                    asnSelect.appendChild(option);
+                });
+
+                asnSelect.disabled = false;
+
+                // Enable load button
+                document.getElementById('loadLinesBtn').disabled = false;
+
+                // Auto-load lines from PO
+                loadLines();
+            } catch (error) {
+                showAlert(`Failed to load PO details: ${error.message}`, 'error');
+            }
+        }
+
+        // Handle ASN selection
+        async function handleASNSelection(event) {
+            const asnId = event.target.value;
+
+            if (!asnId) {
+                // Use PO data
+                selectedASN = null;
+                sourceData = selectedPO;
+                return;
+            }
+
+            try {
+                // Fetch ASN details
+                selectedASN = await getASN(asnId);
+                sourceData = selectedASN;
+            } catch (error) {
+                showAlert(`Failed to load ASN details: ${error.message}`, 'error');
+            }
+        }
+
+        // Load lines from source (PO or ASN)
+        function loadLines() {
+            if (!sourceData) return;
+
+            const container = document.getElementById('lineItemsContainer');
+            container.innerHTML = '';
+
+            // Determine source type and get appropriate quantity field
+            const isASN = selectedASN !== null;
+            const lines = sourceData.lines;
+
+            lines.forEach((line, index) => {
+                const qtyField = isASN ? 'quantity_shipped' : 'quantity_ordered';
+                const qtyLabel = isASN ? 'Shipped' : 'Ordered';
+                const defaultQty = line[qtyField];
+
+                const lineHtml = `
+                    <div class="grid grid-cols-12 gap-2 mb-3 items-end bg-gray-50 p-3 rounded" id="receipt-line-${index}">
+                        <div class="col-span-1">
+                            <label class="block text-xs text-gray-600 mb-1">Line #</label>
+                            <input type="number" class="line-number w-full px-2 py-2 border border-gray-300 rounded text-sm bg-white"
+                                   value="${line.line_number}" readonly>
+                        </div>
+                        <div class="col-span-3">
+                            <label class="block text-xs text-gray-600 mb-1">Product SKU</label>
+                            <input type="text" class="product-sku w-full px-2 py-2 border border-gray-300 rounded text-sm bg-white"
+                                   value="${line.product_sku}" readonly>
+                        </div>
+                        <div class="col-span-3">
+                            <label class="block text-xs text-gray-600 mb-1">Description</label>
+                            <input type="text" class="product-description w-full px-2 py-2 border border-gray-300 rounded text-sm bg-white"
+                                   value="${line.product_description}" readonly>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs text-gray-600 mb-1">${qtyLabel}</label>
+                            <input type="number" class="w-full px-2 py-2 border border-gray-300 rounded text-sm bg-gray-100"
+                                   value="${defaultQty}" readonly>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs text-gray-600 mb-1">Qty Received *</label>
+                            <input type="number" class="quantity-received w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                                   value="${defaultQty}" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-xs text-gray-600 mb-1">Condition</label>
+                            <select class="condition w-full px-2 py-2 border border-gray-300 rounded text-sm">
+                                <option value="good">Good</option>
+                                <option value="damaged">Damaged</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', lineHtml);
+            });
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('createReceiptForm').reset();
+            selectedPO = null;
+            selectedASN = null;
+            sourceData = null;
+            document.getElementById('asnSelect').disabled = true;
+            document.getElementById('asnSelect').innerHTML = '<option value="">-- Select PO first --</option>';
+            document.getElementById('loadLinesBtn').disabled = true;
+            document.getElementById('lineItemsContainer').innerHTML = '<p class="text-gray-500 text-sm">Select a Purchase Order to load line items</p>';
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('receivedDate').value = today;
+        }
+
+        // Collect line items from form
+        function collectLineItems() {
+            const lineElements = document.querySelectorAll('#lineItemsContainer > div');
+            const lines = [];
+
+            lineElements.forEach((lineElement) => {
+                const lineNumber = parseInt(lineElement.querySelector('.line-number').value);
+                const productSku = lineElement.querySelector('.product-sku').value.trim();
+                const productDescription = lineElement.querySelector('.product-description').value.trim();
+                const quantityReceived = parseFloat(lineElement.querySelector('.quantity-received').value);
+                const condition = lineElement.querySelector('.condition').value;
+
+                if (productSku && productDescription && quantityReceived > 0) {
+                    lines.push({
+                        line_number: lineNumber,
+                        product_sku: productSku,
+                        product_description: productDescription,
+                        quantity_received: quantityReceived,
+                        condition: condition
+                    });
+                }
+            });
+
+            return lines;
+        }
+
+        // Handle form submission
+        document.getElementById('createReceiptForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!selectedPO) {
+                showAlert('Please select a Purchase Order first', 'error');
+                return;
+            }
+
+            const poId = document.getElementById('poSelect').value;
+            const asnId = document.getElementById('asnSelect').value || null;
+            const receivedDate = document.getElementById('receivedDate').value;
+            const warehouseLocation = document.getElementById('warehouseLocation').value.trim() || null;
+            const receivedBy = document.getElementById('receivedBy').value.trim() || null;
+            const notes = document.getElementById('notes').value.trim() || null;
+            const lines = collectLineItems();
+
+            if (lines.length === 0) {
+                showAlert('Please load line items first', 'error');
+                return;
+            }
+
+            const receiptData = {
+                po_id: poId,
+                asn_id: asnId,
+                received_date: receivedDate,
+                warehouse_location: warehouseLocation,
+                received_by: receivedBy,
+                notes: notes,
+                lines: lines
+            };
+
+            try {
+                const result = await createReceipt(receiptData);
+                showAlert(`Goods Receipt ${result.receipt_id} posted successfully!`, 'success');
+                resetForm();
+                loadReceipts();
+                loadPurchaseOrders(); // Reload to update PO statuses
+            } catch (error) {
+                showAlert(`Failed to create Receipt: ${error.message}`, 'error');
+            }
+        });
+
+        // Load and display Receipts
+        async function loadReceipts() {
+            const container = document.getElementById('receiptListContainer');
+            showLoading('receiptListContainer');
+
+            try {
+                const receipts = await listReceipts();
+
+                if (receipts.length === 0) {
+                    container.innerHTML = createEmptyState('No goods receipts found. Create one above!');
+                    return;
+                }
+
+                const tableHtml = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PO ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ASN ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Received Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lines</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${receipts.map(receipt => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            ${receipt.receipt_id}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            ${receipt.po_id}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${receipt.asn_id || 'N/A'}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${formatDate(receipt.received_date)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${receipt.warehouse_location || 'N/A'}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${receipt.line_count}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onclick="viewReceipt('${receipt.receipt_id}')"
+                                                    class="text-blue-600 hover:text-blue-800">
+                                                View Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                container.innerHTML = tableHtml;
+            } catch (error) {
+                container.innerHTML = `<div class="text-red-600 p-4">Error loading Receipts: ${error.message}</div>`;
+            }
+        }
+
+        // View Receipt details
+        async function viewReceipt(receiptId) {
+            try {
+                const receipt = await getReceipt(receiptId);
+
+                const detailsHtml = `
+                    <strong>Goods Receipt: ${receipt.receipt_id}</strong><br>
+                    Purchase Order: ${receipt.po_id}<br>
+                    ASN: ${receipt.asn_id || 'N/A'}<br>
+                    Received Date: ${formatDate(receipt.received_date)}<br>
+                    Location: ${receipt.warehouse_location || 'N/A'}<br>
+                    Received By: ${receipt.received_by || 'N/A'}<br>
+                    <br>
+                    Line Items: ${receipt.lines.length}<br>
+                    ${receipt.lines.map(line =>
+                        `Line ${line.line_number}: ${line.product_sku} - ${line.product_description} (Qty: ${line.quantity_received}, Condition: ${line.condition})`
+                    ).join('<br>')}
+                `;
+
+                alert(detailsHtml.replace(/<br>/g, '\n').replace(/<strong>|<\/strong>/g, ''));
+            } catch (error) {
+                showAlert(`Failed to load Receipt details: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

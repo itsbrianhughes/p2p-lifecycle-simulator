@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Way Match - P2P Lifecycle Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">P2P Lifecycle Simulator</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:underline">Home</a>
+                <a href="/static/po.html" class="hover:underline">Purchase Orders</a>
+                <a href="/static/asn.html" class="hover:underline">ASN</a>
+                <a href="/static/receipt.html" class="hover:underline">Goods Receipt</a>
+                <a href="/static/invoice.html" class="hover:underline">Invoices</a>
+                <a href="/static/match.html" class="font-bold underline">3-Way Match</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left Column: Perform Match -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-800">Perform 3-Way Match</h2>
+
+                    <form id="matchForm">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Select Invoice to Match *
+                            </label>
+                            <select
+                                id="invoiceSelect"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Select an invoice...</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                            <p class="text-sm text-gray-700">
+                                <strong>Tolerance Thresholds:</strong>
+                            </p>
+                            <ul class="text-sm text-gray-600 mt-2 space-y-1">
+                                <li>• Price variance: ±2%</li>
+                                <li>• Quantity variance: ±5%</li>
+                            </ul>
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition font-semibold"
+                        >
+                            Run Match
+                        </button>
+                    </form>
+
+                    <!-- Success/Error Messages -->
+                    <div id="message" class="mt-4"></div>
+                </div>
+
+                <!-- Match List -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Match History</h2>
+                        <button
+                            id="refreshBtn"
+                            class="bg-gray-600 text-white py-1 px-3 rounded-md hover:bg-gray-700 transition text-sm"
+                        >
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-2 py-2 text-left text-xs font-semibold text-gray-700 border-b">ID</th>
+                                    <th class="px-2 py-2 text-left text-xs font-semibold text-gray-700 border-b">Invoice</th>
+                                    <th class="px-2 py-2 text-left text-xs font-semibold text-gray-700 border-b">Status</th>
+                                    <th class="px-2 py-2 text-left text-xs font-semibold text-gray-700 border-b">Variance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matchTableBody">
+                                <tr>
+                                    <td colspan="4" class="px-2 py-4 text-center text-gray-500 text-sm">
+                                        Loading matches...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Match Results -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-800">Match Results</h2>
+
+                    <div id="matchResults" class="text-center text-gray-500 py-8">
+                        Select an invoice and run match to see results
+                    </div>
+
+                    <!-- Match Results Template (Hidden by default, shown when match is performed) -->
+                    <div id="matchResultsContent" class="hidden">
+                        <!-- Match Summary -->
+                        <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <p class="text-xs text-gray-600">Match Status</p>
+                                    <p id="matchStatus" class="text-lg font-bold"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-600">Invoice ID</p>
+                                    <p id="matchInvoiceId" class="text-lg font-semibold text-blue-600"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-600">PO ID</p>
+                                    <p id="matchPOId" class="text-lg font-semibold text-blue-600"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-600">Total Variance</p>
+                                    <p id="matchVariance" class="text-lg font-bold"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Match Summary Stats -->
+                        <div class="mb-6 grid grid-cols-3 gap-4">
+                            <div class="p-4 bg-blue-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-blue-600" id="totalLines">0</p>
+                                <p class="text-sm text-gray-600">Total Lines</p>
+                            </div>
+                            <div class="p-4 bg-green-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-green-600" id="matchedLines">0</p>
+                                <p class="text-sm text-gray-600">Matched Lines</p>
+                            </div>
+                            <div class="p-4 bg-red-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-red-600" id="blockedLines">0</p>
+                                <p class="text-sm text-gray-600">Blocked Lines</p>
+                            </div>
+                        </div>
+
+                        <!-- Line Variance Details -->
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700">Line Variance Details</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border border-gray-200">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 border-b">SKU</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 border-b">Description</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 border-b">PO Qty</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 border-b">Rcpt Qty</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 border-b">Inv Qty</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 border-b">Qty Var</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 border-b">Price Var</th>
+                                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 border-b">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="varianceTableBody">
+                                        <!-- Variance rows will be added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include API client and utilities -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/utils.js"></script>
+
+    <script>
+        // ====================================================================
+        // INITIALIZATION
+        // ====================================================================
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load invoices for dropdown
+            await loadInvoicesForDropdown();
+
+            // Load match history
+            await loadMatchHistory();
+
+            // Event listeners
+            document.getElementById('matchForm').addEventListener('submit', handleMatchSubmit);
+            document.getElementById('refreshBtn').addEventListener('click', loadMatchHistory);
+        });
+
+        // ====================================================================
+        // INVOICE DROPDOWN
+        // ====================================================================
+
+        async function loadInvoicesForDropdown() {
+            try {
+                const invoices = await listInvoices();
+                const invoiceSelect = document.getElementById('invoiceSelect');
+
+                invoiceSelect.innerHTML = '<option value="">Select an invoice...</option>';
+
+                // Only show pending invoices (not yet matched)
+                const pendingInvoices = invoices.filter(inv => inv.status === 'pending' || inv.status === 'blocked');
+
+                if (pendingInvoices.length === 0) {
+                    invoiceSelect.innerHTML += '<option value="" disabled>No pending invoices</option>';
+                    return;
+                }
+
+                pendingInvoices.forEach(invoice => {
+                    const option = document.createElement('option');
+                    option.value = invoice.invoice_id;
+                    option.textContent = `${invoice.invoice_id} - ${invoice.po_id} - $${invoice.total_amount.toFixed(2)} (${invoice.status})`;
+                    invoiceSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load invoices:', error);
+            }
+        }
+
+        // ====================================================================
+        // PERFORM MATCH
+        // ====================================================================
+
+        async function handleMatchSubmit(e) {
+            e.preventDefault();
+
+            const invoiceId = document.getElementById('invoiceSelect').value;
+
+            if (!invoiceId) {
+                showMessage('Please select an invoice', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Running 3-way match...', 'info');
+
+                const matchResult = await performMatch({ invoice_id: invoiceId });
+
+                showMessage(`Match completed: ${matchResult.match_status}`, 'success');
+
+                // Display match results
+                displayMatchResults(matchResult);
+
+                // Refresh match history
+                await loadMatchHistory();
+
+                // Refresh invoice dropdown
+                await loadInvoicesForDropdown();
+            } catch (error) {
+                showMessage(`Match failed: ${error.message}`, 'error');
+            }
+        }
+
+        // ====================================================================
+        // DISPLAY MATCH RESULTS
+        // ====================================================================
+
+        function displayMatchResults(matchResult) {
+            // Show results container
+            document.getElementById('matchResults').classList.add('hidden');
+            document.getElementById('matchResultsContent').classList.remove('hidden');
+
+            // Match status badge
+            const statusBadge = getMatchStatusBadge(matchResult.match_status);
+            document.getElementById('matchStatus').innerHTML = statusBadge;
+
+            // Match details
+            document.getElementById('matchInvoiceId').textContent = matchResult.invoice_id;
+            document.getElementById('matchPOId').textContent = matchResult.po_id;
+
+            // Variance amount (colored)
+            const varianceAmount = matchResult.total_variance_amount;
+            const varianceColor = varianceAmount === 0 ? 'text-green-600' : 'text-red-600';
+            document.getElementById('matchVariance').innerHTML = `<span class="${varianceColor}">$${Math.abs(varianceAmount).toFixed(2)}</span>`;
+
+            // Summary stats
+            document.getElementById('totalLines').textContent = matchResult.summary.total_lines;
+            document.getElementById('matchedLines').textContent = matchResult.summary.matched_lines;
+            document.getElementById('blockedLines').textContent = matchResult.summary.blocked_lines;
+
+            // Line variance details
+            const tbody = document.getElementById('varianceTableBody');
+            tbody.innerHTML = matchResult.line_variances.map(variance => {
+                const qtyVarianceClass = variance.quantity_match ? 'text-green-600' : 'text-red-600';
+                const priceVarianceClass = variance.price_match ? 'text-green-600' : 'text-red-600';
+                const lineStatusBadge = getLineStatusBadge(variance.line_status);
+
+                return `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-3 py-2 text-sm font-medium">${variance.product_sku}</td>
+                        <td class="px-3 py-2 text-sm">${variance.product_description}</td>
+                        <td class="px-3 py-2 text-sm text-right">${variance.po_quantity}</td>
+                        <td class="px-3 py-2 text-sm text-right">${variance.receipt_quantity}</td>
+                        <td class="px-3 py-2 text-sm text-right">${variance.invoice_quantity}</td>
+                        <td class="px-3 py-2 text-sm text-right ${qtyVarianceClass}">
+                            ${variance.quantity_variance > 0 ? '+' : ''}${variance.quantity_variance} (${variance.quantity_variance_pct}%)
+                        </td>
+                        <td class="px-3 py-2 text-sm text-right ${priceVarianceClass}">
+                            ${variance.price_variance_pct > 0 ? '+' : ''}${variance.price_variance_pct}%
+                        </td>
+                        <td class="px-3 py-2 text-center">${lineStatusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ====================================================================
+        // MATCH HISTORY
+        // ====================================================================
+
+        async function loadMatchHistory() {
+            try {
+                const matches = await listMatches();
+                const tbody = document.getElementById('matchTableBody');
+
+                if (matches.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-2 py-4 text-center text-gray-500 text-sm">
+                                No matches performed yet
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = matches.map(match => {
+                    const statusBadge = getMatchStatusBadge(match.match_status);
+                    const varianceColor = match.total_variance_amount === 0 ? 'text-green-600' : 'text-red-600';
+
+                    return `
+                        <tr class="hover:bg-gray-50 border-b cursor-pointer" onclick="viewMatch(${match.match_id})">
+                            <td class="px-2 py-2 text-xs font-medium text-blue-600">${match.match_id}</td>
+                            <td class="px-2 py-2 text-xs">${match.invoice_id}</td>
+                            <td class="px-2 py-2 text-xs">${statusBadge}</td>
+                            <td class="px-2 py-2 text-xs ${varianceColor} font-semibold">$${match.total_variance_amount.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load match history:', error);
+            }
+        }
+
+        async function viewMatch(matchId) {
+            try {
+                const match = await getMatch(matchId);
+                displayMatchResults(match);
+            } catch (error) {
+                showMessage(`Failed to load match: ${error.message}`, 'error');
+            }
+        }
+
+        // ====================================================================
+        // UTILITY FUNCTIONS
+        // ====================================================================
+
+        function getMatchStatusBadge(status) {
+            const badges = {
+                'matched': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Matched</span>',
+                'blocked': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Blocked</span>',
+                'partial': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Partial</span>'
+            };
+            return badges[status] || `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">${status}</span>`;
+        }
+
+        function getLineStatusBadge(status) {
+            const badges = {
+                'matched': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">✓</span>',
+                'blocked': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">✗</span>'
+            };
+            return badges[status] || status;
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            let bgColor = 'bg-blue-100 text-blue-800 border-blue-300';
+
+            if (type === 'success') {
+                bgColor = 'bg-green-100 text-green-800 border-green-300';
+            } else if (type === 'error') {
+                bgColor = 'bg-red-100 text-red-800 border-red-300';
+            }
+
+            messageDiv.innerHTML = `
+                <div class="${bgColor} border px-4 py-3 rounded-lg">
+                    ${message}
+                </div>
+            `;
+
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

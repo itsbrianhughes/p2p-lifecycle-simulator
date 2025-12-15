@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exception Management - P2P Lifecycle Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">P2P Lifecycle Simulator</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:underline">Home</a>
+                <a href="/static/po.html" class="hover:underline">Purchase Orders</a>
+                <a href="/static/asn.html" class="hover:underline">ASN</a>
+                <a href="/static/receipt.html" class="hover:underline">Goods Receipt</a>
+                <a href="/static/invoice.html" class="hover:underline">Invoices</a>
+                <a href="/static/match.html" class="hover:underline">3-Way Match</a>
+                <a href="/static/exception.html" class="font-bold underline">Exceptions</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left Column: Filter & Stats -->
+            <div class="lg:col-span-1">
+                <!-- Filter Card -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Filter Exceptions</h2>
+
+                    <div class="space-y-3">
+                        <button onclick="filterByStatus('')"
+                                class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-100 transition">
+                            <span class="font-semibold">All Exceptions</span>
+                            <span id="countAll" class="float-right text-gray-600">0</span>
+                        </button>
+                        <button onclick="filterByStatus('open')"
+                                class="w-full text-left px-4 py-2 rounded-md hover:bg-red-50 transition">
+                            <span class="font-semibold text-red-600">🔴 Open</span>
+                            <span id="countOpen" class="float-right text-gray-600">0</span>
+                        </button>
+                        <button onclick="filterByStatus('in_review')"
+                                class="w-full text-left px-4 py-2 rounded-md hover:bg-yellow-50 transition">
+                            <span class="font-semibold text-yellow-600">⚠️ In Review</span>
+                            <span id="countInReview" class="float-right text-gray-600">0</span>
+                        </button>
+                        <button onclick="filterByStatus('resolved')"
+                                class="w-full text-left px-4 py-2 rounded-md hover:bg-green-50 transition">
+                            <span class="font-semibold text-green-600">✓ Resolved</span>
+                            <span id="countResolved" class="float-right text-gray-600">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistics Card -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Statistics</h2>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Critical</span>
+                            <span id="countCritical" class="text-xl font-bold text-red-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">High</span>
+                            <span id="countHigh" class="text-xl font-bold text-orange-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Medium</span>
+                            <span id="countMedium" class="text-xl font-bold text-yellow-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Low</span>
+                            <span id="countLow" class="text-xl font-bold text-blue-600">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Exception List & Details -->
+            <div class="lg:col-span-2">
+                <!-- Exception List -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Exceptions</h2>
+                        <button id="refreshBtn" class="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div id="exceptionsContainer" class="space-y-3">
+                        <p class="text-center text-gray-500 py-8">Loading exceptions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resolution Modal -->
+    <div id="resolveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full mx-4">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Resolve Exception</h2>
+
+            <div id="exceptionDetails" class="mb-4 p-4 bg-gray-50 rounded-lg">
+                <!-- Exception details will be populated here -->
+            </div>
+
+            <form id="resolveForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Resolved By (Email) *
+                    </label>
+                    <input type="email" id="resolvedBy" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Resolution Notes *
+                    </label>
+                    <textarea id="resolutionNotes" required rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Explain how this exception was resolved..."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeResolveModal()"
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                        Resolve Exception
+                    </button>
+                </div>
+            </form>
+
+            <div id="resolveMessage" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- Include API client and utilities -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/utils.js"></script>
+
+    <script>
+        // ====================================================================
+        // STATE
+        // ====================================================================
+
+        let allExceptions = [];
+        let currentFilter = '';
+        let selectedExceptionId = null;
+
+        // ====================================================================
+        // INITIALIZATION
+        // ====================================================================
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadExceptions();
+
+            document.getElementById('refreshBtn').addEventListener('click', loadExceptions);
+            document.getElementById('resolveForm').addEventListener('submit', handleResolve);
+        });
+
+        // ====================================================================
+        // LOAD EXCEPTIONS
+        // ====================================================================
+
+        async function loadExceptions() {
+            try {
+                allExceptions = await listExceptions();
+                updateStatistics();
+                displayExceptions(currentFilter);
+            } catch (error) {
+                console.error('Failed to load exceptions:', error);
+                document.getElementById('exceptionsContainer').innerHTML =
+                    '<p class="text-center text-red-500 py-8">Failed to load exceptions</p>';
+            }
+        }
+
+        async function filterByStatus(status) {
+            currentFilter = status;
+            displayExceptions(status);
+        }
+
+        function displayExceptions(statusFilter) {
+            const container = document.getElementById('exceptionsContainer');
+
+            const filtered = statusFilter ?
+                allExceptions.filter(e => e.status === statusFilter) :
+                allExceptions;
+
+            if (filtered.length === 0) {
+                container.innerHTML =
+                    '<p class="text-center text-gray-500 py-8">No exceptions found</p>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(exc => createExceptionCard(exc)).join('');
+        }
+
+        function createExceptionCard(exc) {
+            const statusBadge = getStatusBadge(exc.status);
+            const severityBadge = getSeverityBadge(exc.severity);
+            const typeBadge = getTypeBadge(exc.exception_type);
+
+            return `
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                     onclick="viewException(${exc.exception_id})">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="font-mono text-sm text-gray-600">EXC-${exc.exception_id.toString().padStart(3, '0')}</span>
+                            <div class="mt-1 space-x-2">
+                                ${statusBadge}
+                                ${severityBadge}
+                                ${typeBadge}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-600">PO: <span class="font-semibold">${exc.po_id}</span></div>
+                            <div class="text-sm text-gray-600">Invoice: <span class="font-semibold">${exc.invoice_id}</span></div>
+                        </div>
+                    </div>
+
+                    ${exc.variance_amount !== null ? `
+                        <div class="mt-2 text-sm font-semibold text-red-600">
+                            Variance: $${Math.abs(exc.variance_amount).toFixed(2)}
+                        </div>
+                    ` : ''}
+
+                    <div class="mt-2 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">${new Date(exc.created_date).toLocaleString()}</span>
+                        ${exc.status === 'open' || exc.status === 'in_review' ? `
+                            <button onclick="openResolveModal(${exc.exception_id}); event.stopPropagation();"
+                                    class="text-sm bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition">
+                                Resolve
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ====================================================================
+        // STATISTICS
+        // ====================================================================
+
+        function updateStatistics() {
+            document.getElementById('countAll').textContent = allExceptions.length;
+            document.getElementById('countOpen').textContent = allExceptions.filter(e => e.status === 'open').length;
+            document.getElementById('countInReview').textContent = allExceptions.filter(e => e.status === 'in_review').length;
+            document.getElementById('countResolved').textContent = allExceptions.filter(e => e.status === 'resolved').length;
+
+            document.getElementById('countCritical').textContent = allExceptions.filter(e => e.severity === 'critical').length;
+            document.getElementById('countHigh').textContent = allExceptions.filter(e => e.severity === 'high').length;
+            document.getElementById('countMedium').textContent = allExceptions.filter(e => e.severity === 'medium').length;
+            document.getElementById('countLow').textContent = allExceptions.filter(e => e.severity === 'low').length;
+        }
+
+        // ====================================================================
+        // EXCEPTION DETAILS
+        // ====================================================================
+
+        async function viewException(exceptionId) {
+            try {
+                const exc = await getException(exceptionId);
+                alert(JSON.stringify(exc, null, 2));
+            } catch (error) {
+                alert('Failed to load exception details');
+            }
+        }
+
+        // ====================================================================
+        // RESOLVE MODAL
+        // ====================================================================
+
+        async function openResolveModal(exceptionId) {
+            selectedExceptionId = exceptionId;
+
+            try {
+                const exc = await getException(exceptionId);
+
+                document.getElementById('exceptionDetails').innerHTML = `
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div><strong>Exception ID:</strong> EXC-${exc.exception_id.toString().padStart(3, '0')}</div>
+                        <div><strong>Type:</strong> ${exc.exception_type.replace('_', ' ')}</div>
+                        <div><strong>Severity:</strong> ${exc.severity}</div>
+                        <div><strong>Variance:</strong> $${exc.variance_amount ? Math.abs(exc.variance_amount).toFixed(2) : 'N/A'}</div>
+                        <div class="col-span-2"><strong>Description:</strong> ${exc.description}</div>
+                    </div>
+                `;
+
+                document.getElementById('resolveModal').classList.remove('hidden');
+            } catch (error) {
+                alert('Failed to load exception details');
+            }
+        }
+
+        function closeResolveModal() {
+            document.getElementById('resolveModal').classList.add('hidden');
+            document.getElementById('resolveForm').reset();
+            document.getElementById('resolveMessage').innerHTML = '';
+            selectedExceptionId = null;
+        }
+
+        async function handleResolve(e) {
+            e.preventDefault();
+
+            const resolvedBy = document.getElementById('resolvedBy').value;
+            const resolutionNotes = document.getElementById('resolutionNotes').value;
+
+            try {
+                await resolveException(selectedExceptionId, {
+                    resolved_by: resolvedBy,
+                    resolution_notes: resolutionNotes
+                });
+
+                document.getElementById('resolveMessage').innerHTML =
+                    '<div class="bg-green-100 text-green-800 border border-green-300 px-4 py-3 rounded-lg">Exception resolved successfully</div>';
+
+                setTimeout(() => {
+                    closeResolveModal();
+                    loadExceptions();
+                }, 1500);
+            } catch (error) {
+                document.getElementById('resolveMessage').innerHTML =
+                    '<div class="bg-red-100 text-red-800 border border-red-300 px-4 py-3 rounded-lg">Failed to resolve exception</div>';
+            }
+        }
+
+        // ====================================================================
+        // UTILITY FUNCTIONS
+        // ====================================================================
+
+        function getStatusBadge(status) {
+            const badges = {
+                'open': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Open</span>',
+                'in_review': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">In Review</span>',
+                'resolved': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Resolved</span>',
+                'closed': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Closed</span>'
+            };
+            return badges[status] || status;
+        }
+
+        function getSeverityBadge(severity) {
+            const badges = {
+                'critical': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-200 text-red-900">Critical</span>',
+                'high': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-200 text-orange-900">High</span>',
+                'medium': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-200 text-yellow-900">Medium</span>',
+                'low': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-200 text-blue-900">Low</span>'
+            };
+            return badges[severity] || severity;
+        }
+
+        function getTypeBadge(type) {
+            const badges = {
+                'price_variance': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Price</span>',
+                'quantity_variance': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">Quantity</span>',
+                'missing_receipt': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-pink-100 text-pink-800">Missing Receipt</span>',
+                'missing_po': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800">Missing PO</span>',
+                'other': '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Other</span>'
+            };
+            return badges[type] || type;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Orders - P2P Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm mb-6">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-bold text-gray-800">P2P Lifecycle Simulator</h1>
+                <div class="space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-gray-800">Home</a>
+                    <a href="/static/po.html" class="text-blue-600 font-semibold">Purchase Orders</a>
+                    <a href="/docs" class="text-gray-600 hover:text-gray-800">API Docs</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-6">
+        <div class="max-w-6xl mx-auto">
+            <!-- Page Header -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Purchase Orders</h2>
+                <p class="text-gray-600">Create and manage purchase orders (EDI 850 equivalent)</p>
+            </div>
+
+            <!-- Create PO Form -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Create New Purchase Order</h3>
+
+                <form id="createPOForm" class="space-y-4">
+                    <!-- Vendor Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Vendor Name *
+                            </label>
+                            <input type="text" id="vendorName" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="e.g., Acme Supplies Inc.">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Vendor ID *
+                            </label>
+                            <input type="text" id="vendorId" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="e.g., VEND-001">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Expected Delivery
+                            </label>
+                            <input type="date" id="expectedDelivery"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Notes
+                            </label>
+                            <input type="text" id="notes"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="Optional notes">
+                        </div>
+                    </div>
+
+                    <!-- Line Items Section -->
+                    <div class="border-t pt-4 mt-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-semibold text-gray-800">Line Items</h4>
+                            <button type="button" onclick="addLineItem()"
+                                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                                + Add Line
+                            </button>
+                        </div>
+
+                        <div id="lineItemsContainer">
+                            <!-- Line items will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" onclick="resetForm()"
+                                class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Reset
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Create Purchase Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- PO List -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">All Purchase Orders</h3>
+                    <button onclick="loadPurchaseOrders()"
+                            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
+                        Refresh
+                    </button>
+                </div>
+
+                <div id="poListContainer">
+                    <!-- PO list will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+        let lineItemCounter = 0;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            addLineItem(); // Add one line item by default
+            loadPurchaseOrders();
+        });
+
+        // Add line item row
+        function addLineItem() {
+            lineItemCounter++;
+            const container = document.getElementById('lineItemsContainer');
+
+            const lineHtml = `
+                <div class="grid grid-cols-12 gap-2 mb-3 items-end" id="line-${lineItemCounter}">
+                    <div class="col-span-1">
+                        <label class="block text-xs text-gray-600 mb-1">Line #</label>
+                        <input type="number" class="line-number w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                               value="${lineItemCounter}" readonly>
+                    </div>
+                    <div class="col-span-3">
+                        <label class="block text-xs text-gray-600 mb-1">Product SKU *</label>
+                        <input type="text" class="product-sku w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                               placeholder="SKU-12345" required>
+                    </div>
+                    <div class="col-span-3">
+                        <label class="block text-xs text-gray-600 mb-1">Description *</label>
+                        <input type="text" class="product-description w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                               placeholder="Product name" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs text-gray-600 mb-1">Quantity *</label>
+                        <input type="number" class="quantity-ordered w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                               placeholder="100" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs text-gray-600 mb-1">Unit Price *</label>
+                        <input type="number" class="unit-price w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                               placeholder="10.50" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="col-span-1">
+                        <button type="button" onclick="removeLineItem(${lineItemCounter})"
+                                class="w-full px-2 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', lineHtml);
+        }
+
+        // Remove line item
+        function removeLineItem(lineId) {
+            const lineElement = document.getElementById(`line-${lineId}`);
+            if (lineElement) {
+                lineElement.remove();
+            }
+
+            // Keep at least one line item
+            const container = document.getElementById('lineItemsContainer');
+            if (container.children.length === 0) {
+                addLineItem();
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('createPOForm').reset();
+            document.getElementById('lineItemsContainer').innerHTML = '';
+            lineItemCounter = 0;
+            addLineItem();
+        }
+
+        // Collect line items from form
+        function collectLineItems() {
+            const lineElements = document.querySelectorAll('#lineItemsContainer > div');
+            const lines = [];
+
+            lineElements.forEach((lineElement) => {
+                const lineNumber = parseInt(lineElement.querySelector('.line-number').value);
+                const productSku = lineElement.querySelector('.product-sku').value.trim();
+                const productDescription = lineElement.querySelector('.product-description').value.trim();
+                const quantityOrdered = parseFloat(lineElement.querySelector('.quantity-ordered').value);
+                const unitPrice = parseFloat(lineElement.querySelector('.unit-price').value);
+
+                if (productSku && productDescription && quantityOrdered > 0 && unitPrice > 0) {
+                    lines.push({
+                        line_number: lineNumber,
+                        product_sku: productSku,
+                        product_description: productDescription,
+                        quantity_ordered: quantityOrdered,
+                        unit_price: unitPrice
+                    });
+                }
+            });
+
+            return lines;
+        }
+
+        // Handle form submission
+        document.getElementById('createPOForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const vendorName = document.getElementById('vendorName').value.trim();
+            const vendorId = document.getElementById('vendorId').value.trim();
+            const expectedDelivery = document.getElementById('expectedDelivery').value || null;
+            const notes = document.getElementById('notes').value.trim() || null;
+            const lines = collectLineItems();
+
+            if (lines.length === 0) {
+                showAlert('Please add at least one line item', 'error');
+                return;
+            }
+
+            const poData = {
+                vendor_name: vendorName,
+                vendor_id: vendorId,
+                expected_delivery: expectedDelivery,
+                notes: notes,
+                lines: lines
+            };
+
+            try {
+                const result = await createPO(poData);
+                showAlert(`Purchase Order ${result.po_id} created successfully!`, 'success');
+                resetForm();
+                loadPurchaseOrders();
+            } catch (error) {
+                showAlert(`Failed to create PO: ${error.message}`, 'error');
+            }
+        });
+
+        // Load and display purchase orders
+        async function loadPurchaseOrders() {
+            const container = document.getElementById('poListContainer');
+            showLoading('poListContainer');
+
+            try {
+                const pos = await listPOs();
+
+                if (pos.length === 0) {
+                    container.innerHTML = createEmptyState('No purchase orders found. Create one above!');
+                    return;
+                }
+
+                const tableHtml = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PO ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lines</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${pos.map(po => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            ${po.po_id}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            ${po.vendor_name}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            ${createStatusBadge(po.status)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${formatDate(po.created_date)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${po.line_count}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            ${formatCurrency(po.total_amount)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onclick="viewPO('${po.po_id}')"
+                                                    class="text-blue-600 hover:text-blue-800">
+                                                View Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                container.innerHTML = tableHtml;
+            } catch (error) {
+                container.innerHTML = `<div class="text-red-600 p-4">Error loading POs: ${error.message}</div>`;
+            }
+        }
+
+        // View PO details (simple alert for now)
+        async function viewPO(poId) {
+            try {
+                const po = await getPO(poId);
+
+                const detailsHtml = `
+                    <strong>Purchase Order: ${po.po_id}</strong><br>
+                    Vendor: ${po.vendor_name}<br>
+                    Status: ${po.status}<br>
+                    Total: ${formatCurrency(po.total_amount)}<br>
+                    <br>
+                    Line Items: ${po.lines.length}<br>
+                    ${po.lines.map(line =>
+                        `Line ${line.line_number}: ${line.product_sku} - ${line.product_description} (Qty: ${line.quantity_ordered}, Price: ${formatCurrency(line.unit_price)})`
+                    ).join('<br>')}
+                `;
+
+                alert(detailsHtml.replace(/<br>/g, '\n').replace(/<strong>|<\/strong>/g, ''));
+            } catch (error) {
+                showAlert(`Failed to load PO details: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

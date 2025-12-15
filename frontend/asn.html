@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Shipment Notices - P2P Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm mb-6">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-bold text-gray-800">P2P Lifecycle Simulator</h1>
+                <div class="space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-gray-800">Home</a>
+                    <a href="/static/po.html" class="text-gray-600 hover:text-gray-800">Purchase Orders</a>
+                    <a href="/static/asn.html" class="text-blue-600 font-semibold">ASN</a>
+                    <a href="/docs" class="text-gray-600 hover:text-gray-800">API Docs</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-6">
+        <div class="max-w-6xl mx-auto">
+            <!-- Page Header -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Advanced Shipment Notices (ASN)</h2>
+                <p class="text-gray-600">Create shipment notices for purchase orders (EDI 856 equivalent)</p>
+            </div>
+
+            <!-- Create ASN Form -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Create New ASN</h3>
+
+                <form id="createASNForm" class="space-y-4">
+                    <!-- PO Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Select Purchase Order *
+                        </label>
+                        <select id="poSelect" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Select a Purchase Order --</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Only open Purchase Orders are shown</p>
+                    </div>
+
+                    <!-- Vendor Info (auto-populated from PO) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Vendor Name
+                        </label>
+                        <input type="text" id="vendorName" readonly
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                               placeholder="Select PO first">
+                    </div>
+
+                    <!-- Shipment Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Ship Date *
+                            </label>
+                            <input type="date" id="shipDate" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Expected Delivery
+                            </label>
+                            <input type="date" id="expectedDelivery"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Tracking Number
+                            </label>
+                            <input type="text" id="trackingNumber"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="TRACK-123456">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Notes
+                        </label>
+                        <input type="text" id="notes"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Shipment notes">
+                    </div>
+
+                    <!-- Line Items Section -->
+                    <div class="border-t pt-4 mt-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-semibold text-gray-800">Shipment Line Items</h4>
+                            <button type="button" id="loadPOLinesBtn" disabled
+                                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                Load from PO
+                            </button>
+                        </div>
+
+                        <div id="lineItemsContainer">
+                            <p class="text-gray-500 text-sm">Select a Purchase Order to load line items</p>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" onclick="resetForm()"
+                                class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Reset
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Create ASN
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ASN List -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">All Shipment Notices</h3>
+                    <button onclick="loadASNs()"
+                            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
+                        Refresh
+                    </button>
+                </div>
+
+                <div id="asnListContainer">
+                    <!-- ASN list will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+        let selectedPO = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPurchaseOrders();
+            loadASNs();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // PO selection change
+            document.getElementById('poSelect').addEventListener('change', handlePOSelection);
+
+            // Load PO lines button
+            document.getElementById('loadPOLinesBtn').addEventListener('click', loadPOLines);
+
+            // Set default ship date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('shipDate').value = today;
+        }
+
+        // Load open POs into dropdown
+        async function loadPurchaseOrders() {
+            try {
+                const pos = await listPOs();
+                const poSelect = document.getElementById('poSelect');
+
+                // Clear existing options except first
+                poSelect.innerHTML = '<option value="">-- Select a Purchase Order --</option>';
+
+                // Filter for open POs and add to dropdown
+                const openPOs = pos.filter(po => po.status === 'open');
+
+                openPOs.forEach(po => {
+                    const option = document.createElement('option');
+                    option.value = po.po_id;
+                    option.textContent = `${po.po_id} - ${po.vendor_name} ($${po.total_amount.toFixed(2)})`;
+                    option.dataset.vendor = po.vendor_name;
+                    poSelect.appendChild(option));
+                });
+
+                if (openPOs.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No open Purchase Orders available';
+                    option.disabled = true;
+                    poSelect.appendChild(option);
+                }
+            } catch (error) {
+                showAlert(`Failed to load Purchase Orders: ${error.message}`, 'error');
+            }
+        }
+
+        // Handle PO selection
+        async function handlePOSelection(event) {
+            const poId = event.target.value;
+
+            if (!poId) {
+                selectedPO = null;
+                document.getElementById('vendorName').value = '';
+                document.getElementById('loadPOLinesBtn').disabled = true;
+                document.getElementById('lineItemsContainer').innerHTML = '<p class="text-gray-500 text-sm">Select a Purchase Order to load line items</p>';
+                return;
+            }
+
+            try {
+                // Fetch full PO details
+                selectedPO = await getPO(poId);
+
+                // Populate vendor name
+                document.getElementById('vendorName').value = selectedPO.vendor_name;
+
+                // Enable load button
+                document.getElementById('loadPOLinesBtn').disabled = false;
+
+                // Auto-load PO lines
+                loadPOLines();
+            } catch (error) {
+                showAlert(`Failed to load PO details: ${error.message}`, 'error');
+            }
+        }
+
+        // Load PO lines into ASN form
+        function loadPOLines() {
+            if (!selectedPO) return;
+
+            const container = document.getElementById('lineItemsContainer');
+            container.innerHTML = '';
+
+            selectedPO.lines.forEach((line, index) => {
+                const lineHtml = `
+                    <div class="grid grid-cols-12 gap-2 mb-3 items-end bg-gray-50 p-3 rounded" id="asn-line-${index}">
+                        <div class="col-span-1">
+                            <label class="block text-xs text-gray-600 mb-1">Line #</label>
+                            <input type="number" class="line-number w-full px-2 py-2 border border-gray-300 rounded text-sm bg-white"
+                                   value="${line.line_number}" readonly>
+                        </div>
+                        <div class="col-span-3">
+                            <label class="block text-xs text-gray-600 mb-1">Product SKU</label>
+                            <input type="text" class="product-sku w-full px-2 py-2 border border-gray-300 rounded text-sm bg-white"
+                                   value="${line.product_sku}" readonly>
+                        </div>
+                        <div class="col-span-4">
+                            <label class="block text-xs text-gray-600 mb-1">Description</label>
+                            <input type="text" class="product-description w-full px-2 py-2 border border-gray-300 rounded text-sm bg-white"
+                                   value="${line.product_description}" readonly>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs text-gray-600 mb-1">Ordered</label>
+                            <input type="number" class="w-full px-2 py-2 border border-gray-300 rounded text-sm bg-gray-100"
+                                   value="${line.quantity_ordered}" readonly>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs text-gray-600 mb-1">Qty Shipped *</label>
+                            <input type="number" class="quantity-shipped w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                                   value="${line.quantity_ordered}" step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', lineHtml);
+            });
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('createASNForm').reset();
+            selectedPO = null;
+            document.getElementById('vendorName').value = '';
+            document.getElementById('loadPOLinesBtn').disabled = true;
+            document.getElementById('lineItemsContainer').innerHTML = '<p class="text-gray-500 text-sm">Select a Purchase Order to load line items</p>';
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('shipDate').value = today;
+        }
+
+        // Collect line items from form
+        function collectLineItems() {
+            const lineElements = document.querySelectorAll('#lineItemsContainer > div');
+            const lines = [];
+
+            lineElements.forEach((lineElement) => {
+                const lineNumber = parseInt(lineElement.querySelector('.line-number').value);
+                const productSku = lineElement.querySelector('.product-sku').value.trim();
+                const productDescription = lineElement.querySelector('.product-description').value.trim();
+                const quantityShipped = parseFloat(lineElement.querySelector('.quantity-shipped').value);
+
+                if (productSku && productDescription && quantityShipped > 0) {
+                    lines.push({
+                        line_number: lineNumber,
+                        product_sku: productSku,
+                        product_description: productDescription,
+                        quantity_shipped: quantityShipped
+                    });
+                }
+            });
+
+            return lines;
+        }
+
+        // Handle form submission
+        document.getElementById('createASNForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!selectedPO) {
+                showAlert('Please select a Purchase Order first', 'error');
+                return;
+            }
+
+            const poId = document.getElementById('poSelect').value;
+            const vendorName = document.getElementById('vendorName').value.trim();
+            const shipDate = document.getElementById('shipDate').value;
+            const expectedDelivery = document.getElementById('expectedDelivery').value || null;
+            const trackingNumber = document.getElementById('trackingNumber').value.trim() || null;
+            const notes = document.getElementById('notes').value.trim() || null;
+            const lines = collectLineItems();
+
+            if (lines.length === 0) {
+                showAlert('Please load line items from the Purchase Order', 'error');
+                return;
+            }
+
+            const asnData = {
+                po_id: poId,
+                vendor_name: vendorName,
+                ship_date: shipDate,
+                expected_delivery: expectedDelivery,
+                tracking_number: trackingNumber,
+                notes: notes,
+                lines: lines
+            };
+
+            try {
+                const result = await createASN(asnData);
+                showAlert(`ASN ${result.asn_id} created successfully!`, 'success');
+                resetForm();
+                loadASNs();
+            } catch (error) {
+                showAlert(`Failed to create ASN: ${error.message}`, 'error');
+            }
+        });
+
+        // Load and display ASNs
+        async function loadASNs() {
+            const container = document.getElementById('asnListContainer');
+            showLoading('asnListContainer');
+
+            try {
+                const asns = await listASNs();
+
+                if (asns.length === 0) {
+                    container.innerHTML = createEmptyState('No shipment notices found. Create one above!');
+                    return;
+                }
+
+                const tableHtml = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ASN ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PO ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ship Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tracking</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lines</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${asns.map(asn => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            ${asn.asn_id}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            ${asn.po_id}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            ${asn.vendor_name}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            ${createStatusBadge(asn.status)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${formatDate(asn.ship_date)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${asn.tracking_number || 'N/A'}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${asn.line_count}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onclick="viewASN('${asn.asn_id}')"
+                                                    class="text-blue-600 hover:text-blue-800">
+                                                View Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                container.innerHTML = tableHtml;
+            } catch (error) {
+                container.innerHTML = `<div class="text-red-600 p-4">Error loading ASNs: ${error.message}</div>`;
+            }
+        }
+
+        // View ASN details (simple alert for now)
+        async function viewASN(asnId) {
+            try {
+                const asn = await getASN(asnId);
+
+                const detailsHtml = `
+                    <strong>ASN: ${asn.asn_id}</strong><br>
+                    Purchase Order: ${asn.po_id}<br>
+                    Vendor: ${asn.vendor_name}<br>
+                    Status: ${asn.status}<br>
+                    Ship Date: ${formatDate(asn.ship_date)}<br>
+                    Tracking: ${asn.tracking_number || 'N/A'}<br>
+                    <br>
+                    Line Items: ${asn.lines.length}<br>
+                    ${asn.lines.map(line =>
+                        `Line ${line.line_number}: ${line.product_sku} - ${line.product_description} (Qty: ${line.quantity_shipped})`
+                    ).join('<br>')}
+                `;
+
+                alert(detailsHtml.replace(/<br>/g, '\n').replace(/<strong>|<\/strong>/g, ''));
+            } catch (error) {
+                showAlert(`Failed to load ASN details: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
