@@ -346,23 +346,14 @@ p2p-lifecycle-simulator/
 
 ## Use Cases
 
-### As a Portfolio Project
-- Demonstrates business process knowledge for integration/EDI roles
-- Shows ability to translate real-world workflows into working systems
-- Proves understanding of financial controls and exception handling
-- Resume-ready talking points for interviews
+### Business Application
+- Real-world Procure-to-Pay (P2P) lifecycle simulator modeling how mid-market distributors, retailers, and 3PLs manage purchasing, receiving, and vendor invoice verification.
 
 ### As a Learning Tool
 - Study P2P workflows before an ERP implementation project
 - Understand how 3-way matching works in practice
 - Learn how EDI documents (850/856/810) relate to business processes
 - Practice explaining procurement operations to non-technical stakeholders
-
-### As a Demonstration
-- Walk through the P2P lifecycle with real data
-- Show how exceptions are created and resolved
-- Illustrate integration touchpoints between systems
-- Explain why certain data fields are required in EDI transactions
 
 ---
 
