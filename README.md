@@ -1,6 +1,6 @@
 # Real-World P2P Lifecycle Simulator
 
-> A business-realistic Procure-to-Pay workflow simulator demonstrating deep understanding of procurement operations, financial controls, and integration touchpoints across mid-market distribution, retail, and logistics operations.
+> Business-realistic Procure-to-Pay (P2P) simulator: PO → receipt → invoice → 3-way match with tolerance rules and exception handling—built to demonstrate how business workflows map to system integrations.
 
 ---
 
@@ -15,6 +15,45 @@ This simulator models the **complete Procure-to-Pay (P2P) lifecycle** as it oper
 - How data flows across purchasing, warehouse, and accounting systems
 
 **This is not a toy demo.** It reflects the business logic, data structures, and operational discipline found in mid-market distributors, retailers, wholesalers, 3PLs, and importers.
+
+---
+
+## Presales relevance (what this demonstrates)
+
+Solutions Engineers win trust by proving they understand the customer’s workflow—not just the product UI.
+
+This simulator demonstrates how real businesses prevent bad outcomes:
+- Overpayment
+- Duplicate invoices
+- Missing receipts
+- Price/quantity variances
+- “It shipped but accounting can’t pay it” chaos
+
+If you can explain **3-way match + exceptions** clearly, you can explain almost any business workflow clearly.
+
+---
+
+## Where integrations show up in this lifecycle
+
+Even without a specific ERP, the integration touchpoints are consistent:
+- PO creation (procurement system)
+- Shipment/ASN visibility (warehouse/logistics)
+- Receipt confirmation (inventory)
+- Invoice ingestion (AP / OCR / EDI / supplier portal)
+- Match + exception workflow (controls)
+- Payment + remittance (finance)
+
+This repo models the data flow so it’s easy to explain how systems should connect.
+
+---
+
+## Discovery questions this workflow maps to
+
+- What’s your source of truth for POs—ERP, procurement tool, or EDI?
+- Do you require receipts before invoice approval?
+- What are your tolerance thresholds (price/qty)?
+- Who resolves exceptions—AP, receiving, procurement, or vendors?
+- What’s the cost of a mismatch (chargebacks, late fees, delayed shipments)?
 
 ---
 
